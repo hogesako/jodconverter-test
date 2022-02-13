@@ -3,12 +3,43 @@
  */
 package com.ikasako.converter;
 
+import java.io.File;
+import java.util.Map;
+
+import org.jodconverter.core.office.OfficeException;
+import org.jodconverter.core.office.OfficeManager;
+import org.jodconverter.local.LocalConverter;
+import org.jodconverter.local.office.LocalOfficeManager;
+
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
+    public static void main(String[] args) throws OfficeException {
+        OfficeManager manager = LocalOfficeManager.builder().keepAliveOnShutdown(false).install().build();
+        manager.start();
+
+        var app = new App();
+        app.convert("src/main/resources/2page.xlsx", "src/main/resources/2page-range2.pdf", "2");
+        app.convert("src/main/resources/2page.xlsx", "src/main/resources/2page-range1-2.pdf", "1-2");
+
+        app.convert("src/main/resources/1page.xlsx", "src/main/resources/1page-range2.pdf", "2"); // exception
+        app.convert("src/main/resources/1page.xlsx", "src/main/resources/1page-range1.pdf", "1");
+
+        manager.stop();
     }
 
-    public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+    private void convert(String inputFilePath, String outputFilePath, String pageRange) {
+        File inputFile = new File(inputFilePath);
+        File outputFile = new File(outputFilePath);
+        if (!inputFile.exists()) {
+            System.out.println("file not exists");
+            return;
+        }
+
+        Map<String, Object> customProperties = Map.of("FilterData", Map.of("PageRange", pageRange));
+
+        try {
+            LocalConverter.builder().storeProperties(customProperties).build().convert(inputFile).to(outputFile).execute();
+        } catch (OfficeException e) {
+            e.printStackTrace();
+        }
     }
 }
